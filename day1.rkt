@@ -1,20 +1,15 @@
 #lang racket/base
 
-(require racket/file)
-(require racket/string)
-(require threading)
+(require racket/file racket/string)
 
 (define lines (filter (λ (s) (> (string-length (string-trim s)) 0))
                       (file->lines "./resources/day1/input")))
-(define nums (map (λ (s) (string->number s)) lines))
+(define nums (map string->number lines))
 
 (define (fuel mass)
   (- (floor (/ mass 3)) 2))
 
-(define part1
-  (~>> nums
-      (map (λ (num) (fuel num)))
-      (foldl + 0)))
+(define part1 (foldl + 0 (map fuel nums)))
 
 (define (fuel2 mass)
   (define needed-fuel (fuel mass))
@@ -22,10 +17,7 @@
       needed-fuel
       (+ needed-fuel (fuel2 needed-fuel))))
 
-(define part2
-  (~>> nums
-       (map (λ (num) (fuel2 num)))
-       (foldl + 0)))
+(define part2 (foldl + 0 (map fuel2 nums)))
 
 part1
 part2
