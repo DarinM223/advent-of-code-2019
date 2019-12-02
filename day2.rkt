@@ -1,11 +1,13 @@
 #lang racket/base
 
-(require racket/base racket/file racket/match racket/string threading)
+(require racket/file racket/match racket/string threading)
 
-(define lines (~>> "./resources/day2/input"
-                   (file->lines)
-                   (filter (λ (l) (> (string-length (string-trim l)) 0)))))
-(define input (map string->number (string-split (car lines) ",")))
+(define input
+  (map string->number
+       (~> "./resources/day2/input"
+           (file->string)
+           (string-trim)
+           (string-split ","))))
 
 (define (list->program input)
   (for/hash ([i (in-range 0 (length input))]
@@ -15,23 +17,15 @@
 (define program (list->program input))
 
 (define (run program)
+  (define (handle-op i program f)
+    (let ([a (hash-ref program (hash-ref program (+ i 1)))]
+          [b (hash-ref program (hash-ref program (+ i 2)))]
+          [c (hash-ref program (+ i 3))])
+      (run-iter (+ i 4) (hash-set program c (f a b)))))
   (define (run-iter i program)
-    (define op (hash-ref program i))
-    (match op
-      [1
-       (let* ([a-idx (hash-ref program (+ i 1))]
-              [b-idx (hash-ref program (+ i 2))]
-              [c-idx (hash-ref program (+ i 3))]
-              [a-value (hash-ref program a-idx)]
-              [b-value (hash-ref program b-idx)])
-         (run-iter (+ i 4) (hash-set program c-idx (+ a-value b-value))))]
-      [2
-       (let* ([a-idx (hash-ref program (+ i 1))]
-              [b-idx (hash-ref program (+ i 2))]
-              [c-idx (hash-ref program (+ i 3))]
-              [a-value (hash-ref program a-idx)]
-              [b-value (hash-ref program b-idx)])
-         (run-iter (+ i 4) (hash-set program c-idx (* a-value b-value))))]
+    (match (hash-ref program i)
+      [1 (handle-op i program +)]
+      [2 (handle-op i program *)]
       [_ program]))
   (run-iter 0 program))
 
