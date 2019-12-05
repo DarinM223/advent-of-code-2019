@@ -6,22 +6,22 @@
 (define file-input (file->string filename))
 (define wires (string-split file-input "\n"))
 
-(define (path-points path x y)
+(define (path-points path x y r)
   (define amount (string->number (substring path 1)))
+  (define (add-points f) (foldl cons r (for/list ([i amount]) (f i))))
   (match (string-ref path 0)
-    [#\L (values (- x amount) y (for/list ([i amount]) (list (- x i) y)))]
-    [#\R (values (+ x amount) y (for/list ([i amount]) (list (+ x i) y)))]
-    [#\D (values x (- y amount) (for/list ([i amount]) (list x (- y i))))]
-    [#\U (values x (+ y amount) (for/list ([i amount]) (list x (+ y i))))]))
+    [#\L (values (- x amount) y (add-points (λ (i) (list (- x i) y))))]
+    [#\R (values (+ x amount) y (add-points (λ (i) (list (+ x i) y))))]
+    [#\D (values x (- y amount) (add-points (λ (i) (list x (- y i)))))]
+    [#\U (values x (+ y amount) (add-points (λ (i) (list x (+ y i)))))]))
 
 (define (wire-points wire)
-  (define-values (x2 y2 result2)
-    (for/fold ([x 0] [y 0] [result '()])
-              ([path wire])
-      (let-values ([(x y new-results) (path-points path x y)])
-        (values x y (foldl cons result new-results)))))
-  ; Ugly, but can't find a structure with O(1) append in Racket.
-  (reverse result2))
+  (for/fold ([x 0]
+             [y 0]
+             [result '()]
+             #:result (reverse result))
+            ([path wire])
+    (path-points path x y result)))
 
 (define (build-grid wire wire-num grid)
   (for/fold ([grid grid])
