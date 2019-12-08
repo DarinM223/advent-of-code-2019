@@ -1,10 +1,12 @@
 #lang racket/base
 
-(require racket/file racket/function racket/match racket/string threading)
+(require data/queue racket/file racket/function racket/match racket/set racket/string threading)
+(require racket/list)
+(require errortrace)
 
 (define input
   (map string->number
-       (~> "./resources/day5/input"
+       (~> "./resources/day7/input"
            (file->string)
            (string-trim)
            (string-split ","))))
@@ -74,11 +76,38 @@
       [6 (jump-condition params i program (curryr = 0))]
       [7 (handle-op params i program my-lt?)]
       [8 (handle-op params i program my-eq?)]
+      [99 'halt]
       [_ program]))
   (run-iter 0 program))
 
-(define (my-print a) (printf "~a\n" a))
+(define (simulate program input1 input2)
+  (define count-read 0)
+  (define l '())
+  (define (read-fn)
+    (λ ()
+      (match count-read
+        [0 (set! count-read (+ count-read 1))
+           input1]
+        [1 (set! count-read (+ count-read 1))
+           input2]
+        [_ (error "Too many inputs")])))
+  (define (write-fn) (λ (a) (set! l (cons a l))))
+  (values (run program (read-fn) (write-fn)) l))
 
-; Input 1 into command line to run part 1
-; Input 5 into command line to run part 2
-(define result (run program read my-print)) ; Evaluate this and the answer is in the console output.
+(define (run-stages program inputs)
+  (for/fold ([input2 0])
+            ([input1 inputs])
+    (let-values ([(_ result) (simulate program input1 input2)])
+      (car result))))
+
+(define (max-thruster program run-stages)
+  (for/fold ([sum 0]
+             [input '(0 0 0 0 0)]
+             #:result sum)
+            ([l (in-permutations (range 0 5))])
+    (let ((new-sum (run-stages program l)))
+      (if (> new-sum sum)
+          (values new-sum l)
+          (values sum input)))))
+
+(max-thruster program run-stages)
