@@ -1,8 +1,12 @@
 #lang racket/base
 
-(require data/queue racket/file racket/function racket/match racket/set racket/string threading)
-(require racket/list)
-(require errortrace)
+(require racket/async-channel
+         racket/file
+         racket/function
+         racket/list
+         racket/match
+         racket/string
+         threading)
 
 (define input
   (map string->number
@@ -12,8 +16,7 @@
            (string-split ","))))
 
 (define (list->program input)
-  (for/hash ([i (in-range 0 (length input))]
-             [v (in-list input)])
+  (for/hash ([(v i) (in-indexed input)])
     (values i v)))
 
 (define program (list->program input))
@@ -110,4 +113,40 @@
           (values new-sum l)
           (values sum input)))))
 
-(max-thruster program run-stages)
+(define part1 (max-thruster program run-stages))
+
+(define (run-async program inputs)
+  (define (last-amplifier i) (= i (- (length inputs) 1)))
+  (define channels (for/vector ([_ inputs]) (make-async-channel)))
+  (define last-output 0)
+
+  (define workers
+    (for/list ([(phase i) (in-indexed inputs)])
+      (thread
+       (λ ()
+         (define in-channel (vector-ref channels i))
+         (async-channel-put in-channel phase)
+         (when (= i 0) (async-channel-put in-channel 0))
+
+         (define (read-fn) (async-channel-get in-channel))
+         (define (write-fn e)
+           (if (last-amplifier i)
+               (begin
+                 (set! last-output e)
+                 (async-channel-put (vector-ref channels 0) e))
+               (async-channel-put (vector-ref channels (+ i 1)) e)))
+         (let loop ([program program])
+           (match (run program read-fn write-fn)
+             ['halt program]
+             [updated (loop updated)]))))))
+  (for-each thread-wait workers)
+  last-output)
+
+(define (find-best program)
+  (argmax identity (for/list ([inputs (in-permutations '(5 6 7 8 9))])
+                     (run-async program inputs))))
+
+(define part2 (find-best program))
+
+part1
+part2
