@@ -103,17 +103,11 @@
     (let-values ([(_ result) (simulate program input1 input2)])
       (car result))))
 
-(define (max-thruster program run-stages)
-  (for/fold ([sum 0]
-             [input '(0 0 0 0 0)]
-             #:result sum)
-            ([l (in-permutations (range 0 5))])
-    (let ((new-sum (run-stages program l)))
-      (if (> new-sum sum)
-          (values new-sum l)
-          (values sum input)))))
+(define (find-best program run inputs)
+  (argmax identity (for/list ([input inputs])
+                     (run program input))))
 
-(define part1 (max-thruster program run-stages))
+(define part1 (find-best program run-stages (in-permutations (range 0 5))))
 
 (define (run-async program inputs)
   (define (last-amplifier i) (= i (- (length inputs) 1)))
@@ -142,11 +136,7 @@
   (for-each thread-wait workers)
   last-output)
 
-(define (find-best program)
-  (argmax identity (for/list ([inputs (in-permutations '(5 6 7 8 9))])
-                     (run-async program inputs))))
-
-(define part2 (find-best program))
+(define part2 (find-best program run-async (in-permutations (range 5 10))))
 
 part1
 part2
