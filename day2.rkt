@@ -1,39 +1,14 @@
 #lang racket/base
 
-(require racket/file racket/match racket/string threading)
+(require threading "intcode.rkt")
 
-(define input
-  (map string->number
-       (~> "./resources/day2/input"
-           (file->string)
-           (string-trim)
-           (string-split ","))))
-
-(define (list->program input)
-  (for/hash ([i (in-range 0 (length input))]
-             [v (in-list input)])
-    (values i v)))
-
-(define program (list->program input))
-
-(define (run program)
-  (define (handle-op i program f)
-    (let ([a (hash-ref program (hash-ref program (+ i 1)))]
-          [b (hash-ref program (hash-ref program (+ i 2)))]
-          [c (hash-ref program (+ i 3))])
-      (run-iter (+ i 4) (hash-set program c (f a b)))))
-  (define (run-iter i program)
-    (match (hash-ref program i)
-      [1 (handle-op i program +)]
-      [2 (handle-op i program *)]
-      [_ program]))
-  (run-iter 0 program))
+(define program (list->program (read-input "./resources/day2/input")))
 
 (define (run-program a b)
   (~> program
       (hash-set 1 a)
       (hash-set 2 b)
-      (run)
+      (run read displayln)
       (hash-ref 0)))
 
 (define part1 (run-program 12 2))
