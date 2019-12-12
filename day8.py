@@ -1,15 +1,15 @@
 def count_nums(chunk: str, target: int) -> int:
-    return len([n for n in chunk if int(n) == target])
+    return sum([int(n) == target for n in chunk])
 
 
 def part1(width: int, height: int) -> int:
     chunk_size = width * height
-    min_chunk = None
-    min_zeroes = 10000
+    min_chunk, min_zeroes = None, 10000
     with open('./resources/day8/input') as f:
         while chunk := f.read(chunk_size).strip():
-            if (num_zeroes := count_nums(chunk, 0)) < min_zeroes:
-                min_zeroes, min_chunk = num_zeroes, chunk
+            num_zeroes = count_nums(chunk, 0)
+            if num_zeroes < min_zeroes:
+                min_chunk, min_zeroes = chunk, num_zeroes
         return count_nums(min_chunk, 1) * count_nums(min_chunk, 2)
 
 
