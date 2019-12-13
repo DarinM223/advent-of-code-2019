@@ -111,7 +111,6 @@
           (lparallel:submit-task
            channel
            (lambda (i)
-             (format t "Starting thread: ~a~%" i)
              (let* ((program (list->program program-input))
                     (input-queue (nth i input-queues))
                     (output-queue (if (last-amplifier i)
