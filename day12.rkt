@@ -29,19 +29,16 @@
             ([pair (unique-pairs moons)])
     (match-define (list i1 i2) pair)
     (define-values (v1-change v2-change)
-      (for/fold ([v1 '()] [v2 '()])
-                ([coord1 (list-ref moons i1)]
-                 [coord2 (list-ref moons i2)])
+      (for/lists (v1 v2)
+                 ([coord1 (list-ref moons i1)]
+                  [coord2 (list-ref moons i2)])
         (cond
-          [(< coord1 coord2)
-           (values (cons 1 v1) (cons -1 v2))]
-          [(> coord1 coord2)
-           (values (cons -1 v1) (cons 1 v2))]
-          [else
-           (values (cons 0 v1) (cons 0 v2))])))
+          [(< coord1 coord2) (values 1 -1)]
+          [(> coord1 coord2) (values -1 1)]
+          [else (values 0 0)])))
     (~> vels
-        (list-update i1 (curryr add-points (reverse v1-change)))
-        (list-update i2 (curryr add-points (reverse v2-change))))))
+        (list-update i1 (curryr add-points v1-change))
+        (list-update i2 (curryr add-points v2-change)))))
 
 (define (step moons)
   (generator ()
