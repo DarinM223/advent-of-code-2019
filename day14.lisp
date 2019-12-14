@@ -16,14 +16,9 @@
           (while line)
           (for (left right) = (remove-if (lambda (s) (= (length s) 0))
                                          (uiop:split-string line :separator "=>")))
-          (collect (list (parse-materials left)
-                         (car (parse-materials right)))))))
+          (collect (list (parse-materials left) (car (parse-materials right)))))))
 
 (defvar *input* (read-input *filename*))
-
-(defun acc-reqs (amount reqs f)
-  (iter (for (num req) in reqs)
-        (collect (list (funcall f num amount) req))))
 
 (defun make-material-map (input)
   (iter (with hash = (make-hash-table :test #'equal))
@@ -35,8 +30,7 @@
 
 (defun calc-material (material need material-map extra)
   (multiple-value-bind (r ok) (gethash material material-map)
-    (let ((produced (car r))
-          (reqs (cadr r)))
+    (let ((produced (car r)) (reqs (cadr r)))
       (if (not ok)
           need
           (let* ((have (or (gethash material extra) 0))
@@ -53,33 +47,28 @@
                          (+ (or (gethash material extra) 0) material-extra))
                    (return total))))))))
 
-(defun calc (material need)
-  (calc-material material need *material-map* (make-hash-table :test #'equal)))
+(defun calc-ores (need)
+  (calc-material "FUEL" need *material-map* (make-hash-table :test #'equal)))
 
-(defvar *part1* (calc "FUEL" 1))
+(defvar *part1* (calc-ores 1))
 
 (defvar *available-ore* 1000000000000)
 
 (defvar *upper-bound*
   (iter (for i first 1 then (* i 2))
-        (while (< (calc "FUEL" i) *available-ore*))
+        (while (< (calc-ores i) *available-ore*))
         (finally (return i))))
 
 (defun binary-search (lower-bound upper-bound f target)
-  (iter (with result = 0)
-        (for mid = (truncate (+ lower-bound upper-bound) 2))
+  (iter (for mid = (truncate (+ lower-bound upper-bound) 2))
         (while (<= lower-bound upper-bound))
         (cond
           ((> (funcall f mid) target) (setf upper-bound (- mid 1)))
-          ((< (funcall f mid) target) (setf lower-bound (+ mid 1)))
-          (t (setf result mid)))
+          ((< (funcall f mid) target) (setf lower-bound (+ mid 1))))
         (finally (return mid))))
 
 (defvar *part2*
-  (binary-search (/ *upper-bound* 2)
-                 *upper-bound*
-                 (lambda (i) (calc "FUEL" i))
-                 *available-ore*))
+  (binary-search (/ *upper-bound* 2) *upper-bound* #'calc-ores *available-ore*))
 
 *part1*
 *part2*
